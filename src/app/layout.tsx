@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Bricolage_Grotesque } from "next/font/google";
 import QueryProvider from "@/providers/QueryProvider";
 import { Toaster } from "sonner";
+import Navbar from "@/components/shared/Navbar";
+import Footer from "@/components/shared/Footer";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({
@@ -22,9 +24,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${bricolage.className} antialiased`}>
+      <body
+        className={`${bricolage.className} antialiased min-h-screen flex flex-col justify-between`}
+      >
         <QueryProvider>
-          {children}
+          <div>
+            <Navbar />
+            <main>{children}</main>
+          </div>
+          <Footer />
           <Toaster position="top-right" richColors closeButton />
         </QueryProvider>
       </body>
