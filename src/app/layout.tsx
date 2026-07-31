@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque } from "next/font/google";
+import { Bricolage_Grotesque, Geist } from "next/font/google";
 import QueryProvider from "@/providers/QueryProvider";
 import { Toaster } from "sonner";
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 import "./globals.css";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -23,8 +26,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={cn("font-sans", geist.variable)}
+      suppressHydrationWarning
+    >
       <body
+        suppressHydrationWarning={true}
         className={`${bricolage.className} antialiased min-h-screen flex flex-col justify-between`}
       >
         <QueryProvider>

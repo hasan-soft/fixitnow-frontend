@@ -2,12 +2,12 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-400 py-12 border-t border-gray-800">
+    <footer className="bg-slate-950 text-slate-400 py-12 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
         {/* Brand */}
         <div>
           <h3 className="text-2xl font-bold text-white mb-4">FixItNow</h3>
-          <p className="text-sm">
+          <p className="text-sm text-slate-400">
             Your trusted marketplace for reliable, professional home services
             and repairs.
           </p>
@@ -67,7 +67,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-6 border-t border-gray-800 text-center text-xs text-gray-500">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-6 border-t border-slate-900 text-center text-xs text-slate-500">
         © {new Date().getFullYear()} FixItNow. All rights reserved.
       </div>
     </footer>

@@ -9,6 +9,18 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import axios from "axios";
+import Cookies from "js-cookie";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,18 +39,37 @@ export default function LoginPage() {
     try {
       const res = await authService.login(data);
       if (res.success && res.data) {
-        localStorage.setItem("token", res.data.accessToken);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        const accessToken = res.data.accessToken;
 
-        toast.success(`Welcome back, ${res.data.user.name}!`);
 
-        const role = res.data.user.role;
-        if (role === "ADMIN") {
-          router.push("/dashboard/admin");
-        } else if (role === "TECHNICIAN") {
-          router.push("/dashboard/technician");
-        } else {
-          router.push("/dashboard/customer");
+        localStorage.setItem("token", accessToken);
+        Cookies.set("token", accessToken, { expires: 7, path: "/" });
+
+  
+        const userRes = await authService.getMe();
+        const user = userRes.data;
+
+        if (user) {
+
+          localStorage.setItem("user", JSON.stringify(user));
+          if (user.role) {
+            Cookies.set("role", user.role, { expires: 7, path: "/" });
+          }
+
+
+          window.dispatchEvent(new Event("storage"));
+
+          toast.success(`Welcome back, ${user.name || "User"}!`);
+
+
+          const role = user.role;
+          if (role === "ADMIN") {
+            router.push("/dashboard/admin");
+          } else if (role === "TECHNICIAN") {
+            router.push("/dashboard/technician");
+          } else {
+            router.push("/dashboard/customer");
+          }
         }
       }
     } catch (error: unknown) {
@@ -55,68 +86,64 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-md border border-gray-100">
-        <div>
-          <h2 className="text-center text-3xl font-extrabold text-gray-900">
-            Sign in to <span className="text-blue-600">FixItNow</span>
-          </h2>
-        </div>
+    <div className="min-h-[85vh] flex items-center justify-center bg-slate-50/50 p-4">
+      <Card className="w-full max-w-md shadow-lg border-slate-200">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-bold tracking-tight">
+            Sign in to <span className="text-primary">FixItNow</span>
+          </CardTitle>
+          <CardDescription>
+            Enter your email and password to access your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="john@example.com"
+                {...register("email")}
+              />
+              {errors.email && (
+                <p className="text-destructive text-xs font-medium">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
 
-        <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              {...register("email")}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-800"
-              placeholder="john@example.com"
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                {...register("password")}
+              />
+              {errors.password && (
+                <p className="text-destructive text-xs font-medium">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              {...register("password")}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-800"
-              placeholder="••••••••"
-            />
-            {errors.password && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Signing in..." : "Sign In"}
+            </Button>
+          </form>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 font-medium disabled:opacity-50 transition-colors"
-          >
-            {isLoading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-600">
-          Dont have an account?{" "}
-          <Link
-            href="/register"
-            className="font-medium text-blue-600 hover:text-blue-500"
-          >
-            Register here
-          </Link>
-        </p>
-      </div>
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/register"
+              className="font-semibold text-primary underline-offset-4 hover:underline"
+            >
+              Register here
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

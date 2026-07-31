@@ -2,33 +2,64 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import Cookies from "js-cookie";
 import { User } from "@/types/auth";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { axiosInstance } from "@/lib/axios";
 
 export default function Navbar() {
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
 
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window !== "undefined") {
+  useEffect(() => {
+    const checkUser = async () => {
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
         try {
-          return JSON.parse(storedUser);
+          setUser(JSON.parse(storedUser));
+          return;
         } catch {
-          return null;
+  
+          localStorage.removeItem("user");
         }
       }
-    }
-    return null;
-  });
+      const token = Cookies.get("token");
+      if (token) {
+        try {
+          const res = await axiosInstance.get("/auth/me");
+          if (res.data?.data) {
+            setUser(res.data.data);
+            localStorage.setItem("user", JSON.stringify(res.data.data));
+          }
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    checkUser();
+
+    window.addEventListener("storage", checkUser);
+    return () => window.removeEventListener("storage", checkUser);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
+    Cookies.remove("token");
+    Cookies.remove("role");
+    Cookies.remove("refreshToken");
+
     setUser(null);
     toast.success("Logged out successfully");
     router.push("/login");
+    router.refresh();
   };
 
   const getDashboardLink = () => {
@@ -44,34 +75,34 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+    <nav className="bg-background border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl font-extrabold text-blue-600">
+            <span className="text-2xl font-extrabold text-primary">
               FixItNow
             </span>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-semibold">
+            <Badge variant="secondary" className="font-semibold">
               Services
-            </span>
+            </Badge>
           </Link>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-700">
-            <Link href="/" className="hover:text-blue-600 transition-colors">
+          <div className="hidden md:flex items-center space-x-6 text-sm font-medium">
+            <Link href="/" className="hover:text-primary transition-colors">
               Home
             </Link>
             <Link
               href="/services"
-              className="hover:text-blue-600 transition-colors"
+              className="hover:text-primary transition-colors"
             >
               Browse Services
             </Link>
             {user && (
               <Link
                 href={getDashboardLink()}
-                className="hover:text-blue-600 transition-colors font-semibold text-blue-600"
+                className="hover:text-primary font-semibold text-primary transition-colors"
               >
                 Dashboard
               </Link>
@@ -82,29 +113,27 @@ export default function Navbar() {
           <div className="flex items-center space-x-4">
             {user ? (
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gray-800 hidden sm:inline">
-                  Hi, {user.name} ({user.role})
+                <span className="text-sm font-medium hidden sm:inline">
+                  Hi, {user.name || "User"} ({user.role})
                 </span>
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handleLogout}
-                  className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                  className="text-destructive hover:bg-destructive/10 border-destructive/30"
                 >
                   Logout
-                </button>
+                </Button>
               </div>
             ) : (
-              <div className="flex items-center space-x-3">
-                <Link
-                  href="/login"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
-                >
-                  Login
+              <div className="flex items-center space-x-2">
+                <Link href="/login">
+                  <Button variant="ghost" size="sm">
+                    Login
+                  </Button>
                 </Link>
-                <Link
-                  href="/register"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-                >
-                  Register
+                <Link href="/register">
+                  <Button size="sm">Register</Button>
                 </Link>
               </div>
             )}
