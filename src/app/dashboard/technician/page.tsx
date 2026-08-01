@@ -20,15 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Play, CheckCheck } from "lucide-react";
 
 export default function TechnicianDashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -37,7 +31,7 @@ export default function TechnicianDashboardPage() {
 
   const loadBookings = async (isMounted = true) => {
     try {
-      const res = await axiosInstance.get("/bookings/technician");
+      const res = await axiosInstance.get("/technicians/bookings");
       if (isMounted && res.data.success) {
         setBookings(res.data.data);
       }
@@ -95,6 +89,113 @@ export default function TechnicianDashboardPage() {
     }
   };
 
+  
+  const renderActionButtons = (
+    bookingId: string,
+    currentStatus: BookingStatus,
+  ) => {
+    const isUpdating = updatingId === bookingId;
+
+    switch (currentStatus) {
+      case "REQUESTED":
+        return (
+          <div className="flex justify-end gap-2">
+            <Button
+              size="sm"
+              variant="default"
+              className="bg-emerald-600 hover:bg-emerald-700 h-8 text-xs gap-1"
+              disabled={isUpdating}
+              onClick={() =>
+                handleStatusUpdate(bookingId, "ACCEPTED" as BookingStatus)
+              }
+            >
+              {isUpdating ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              )}
+              Accept
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-8 text-xs gap-1"
+              disabled={isUpdating}
+              onClick={() =>
+                handleStatusUpdate(bookingId, "DECLINED" as BookingStatus)
+              }
+            >
+              {isUpdating ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <XCircle className="h-3.5 w-3.5" />
+              )}
+              Decline
+            </Button>
+          </div>
+        );
+
+      case "ACCEPTED":
+        return (
+          <span className="text-xs text-amber-600 font-medium italic">
+            Waiting for Customer Payment
+          </span>
+        );
+
+      case "PAID":
+        return (
+          <Button
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 h-8 text-xs gap-1"
+            disabled={isUpdating}
+            onClick={() =>
+              handleStatusUpdate(bookingId, "IN_PROGRESS" as BookingStatus)
+            }
+          >
+            {isUpdating ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Play className="h-3.5 w-3.5" />
+            )}
+            Start Job
+          </Button>
+        );
+
+      case "IN_PROGRESS":
+        return (
+          <Button
+            size="sm"
+            className="bg-purple-600 hover:bg-purple-700 h-8 text-xs gap-1"
+            disabled={isUpdating}
+            onClick={() =>
+              handleStatusUpdate(bookingId, "COMPLETED" as BookingStatus)
+            }
+          >
+            {isUpdating ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <CheckCheck className="h-3.5 w-3.5" />
+            )}
+            Complete Job
+          </Button>
+        );
+
+      case "COMPLETED":
+        return (
+          <span className="text-xs text-muted-foreground font-medium">
+            Job Finished
+          </span>
+        );
+
+      case "DECLINED":
+      case "CANCELLED":
+        return <span className="text-xs text-red-500 font-medium">Closed</span>;
+
+      default:
+        return null;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -118,7 +219,7 @@ export default function TechnicianDashboardPage() {
         <CardHeader>
           <CardTitle>Assigned Jobs</CardTitle>
           <CardDescription>
-            List of tasks assigned to you by the administration.
+            List of tasks assigned to you by the platform customers.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -136,7 +237,7 @@ export default function TechnicianDashboardPage() {
                     <TableHead>Service</TableHead>
                     <TableHead>Date & Time</TableHead>
                     <TableHead>Current Status</TableHead>
-                    <TableHead className="text-right">Update Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -146,7 +247,7 @@ export default function TechnicianDashboardPage() {
                     return (
                       <TableRow key={bookingId}>
                         <TableCell className="font-medium">
-                          {booking.service?.name || "Service Job"}
+                          {booking.service?.name || "Home Service Job"}
                         </TableCell>
                         <TableCell>
                           <div>
@@ -160,42 +261,7 @@ export default function TechnicianDashboardPage() {
                           <BookingStatusBadge status={booking.status} />
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end items-center gap-2">
-                            <Select
-                              disabled={
-                                updatingId === bookingId ||
-                                booking.status === "COMPLETED" ||
-                                booking.status === "CANCELLED"
-                              }
-                              onValueChange={(val) =>
-                                handleStatusUpdate(
-                                  bookingId,
-                                  val as BookingStatus,
-                                )
-                              }
-                              defaultValue={booking.status}
-                            >
-                              <SelectTrigger className="w-35">
-                                <SelectValue placeholder="Status" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="ACCEPTED">Accept</SelectItem>
-                                <SelectItem value="DECLINED">
-                                  Decline
-                                </SelectItem>
-                                <SelectItem value="IN_PROGRESS">
-                                  In Progress
-                                </SelectItem>
-                                <SelectItem value="COMPLETED">
-                                  Completed
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-
-                            {updatingId === bookingId && (
-                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                            )}
-                          </div>
+                          {renderActionButtons(bookingId, booking.status)}
                         </TableCell>
                       </TableRow>
                     );

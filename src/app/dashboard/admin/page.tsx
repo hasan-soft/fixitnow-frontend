@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import Link from "next/link";
 import { axiosInstance } from "@/lib/axios";
-import { Booking } from "@/types/booking";
-import BookingStatusBadge from "@/components/shared/BookingStatusBadge";
 import {
   Card,
   CardContent,
@@ -12,167 +10,187 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { toast } from "sonner";
-import { Loader2, Calendar, Users, Wrench } from "lucide-react";
+  Users,
+  LayoutGrid,
+  CalendarCheck,
+  ArrowRight,
+  ShieldCheck,
+} from "lucide-react";
 
 export default function AdminDashboardPage() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeBookings: 0,
+    totalCategories: 0,
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
-    const fetchAllBookings = async () => {
+    const fetchStats = async () => {
       try {
-        const res = await axiosInstance.get("/bookings/admin/all");
-        if (isMounted && res.data.success) {
-          setBookings(res.data.data);
-        }
-      } catch (error: unknown) {
+        // একাধিক API নিরাপদভাবে ডাকার জন্য Promise.allSettled
+        const [usersRes, categoriesRes, bookingsRes] = await Promise.allSettled(
+          [
+            axiosInstance.get("/admin/users"),
+            axiosInstance.get("/categories"),
+            axiosInstance.get("/bookings"),
+          ],
+        );
+
         if (isMounted) {
-          let errorMessage = "Failed to load all bookings";
-          if (axios.isAxiosError(error)) {
-            errorMessage = error.response?.data?.message || errorMessage;
-          } else if (error instanceof Error) {
-            errorMessage = error.message;
-          }
-          toast.error(errorMessage);
+          const uCount =
+            usersRes.status === "fulfilled" && usersRes.value.data?.data
+              ? usersRes.value.data.data.length
+              : 0;
+
+          const cCount =
+            categoriesRes.status === "fulfilled" &&
+            categoriesRes.value.data?.data
+              ? categoriesRes.value.data.data.length
+              : 0;
+
+          const bCount =
+            bookingsRes.status === "fulfilled" && bookingsRes.value.data?.data
+              ? bookingsRes.value.data.data.length
+              : 0;
+
+          setStats({
+            totalUsers: uCount,
+            activeBookings: bCount,
+            totalCategories: cCount,
+          });
         }
+      } catch (err) {
+        console.error("Error loading stats:", err);
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
-    fetchAllBookings();
-
+    fetchStats();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  const totalBookings = bookings.length;
-  const pendingBookings = bookings.filter(
-    (b) => b.status === "REQUESTED",
-  ).length;
-  const completedBookings = bookings.filter(
-    (b) => b.status === "COMPLETED",
-  ).length;
-
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin Overview</h1>
-        <p className="text-muted-foreground">
-          System-wide performance and booking management
-        </p>
+    <div className="container mx-auto py-8 px-4 sm:px-6 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            Admin Overview
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Global performance metrics and platform moderation management
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+            <ShieldCheck className="w-3.5 h-3.5" /> System Active
+          </span>
+        </div>
       </div>
 
-      {/* Metrics Grid */}
+      {/* Required Metric Cards (Requirement অনুযায়ী) */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="shadow-sm border-slate-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Bookings
+            <CardTitle className="text-sm font-medium text-slate-600">
+              Total Users
             </CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalBookings}</div>
+            <div className="text-2xl font-bold text-slate-900">
+              {loading ? "..." : stats.totalUsers}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Registered customers & technicians
+            </p>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="shadow-sm border-slate-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Approvals
+            <CardTitle className="text-sm font-medium text-slate-600">
+              Active Bookings
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CalendarCheck className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
-              {pendingBookings}
+              {loading ? "..." : stats.activeBookings}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Ongoing and requested jobs
+            </p>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="shadow-sm border-slate-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Completed Jobs
+            <CardTitle className="text-sm font-medium text-slate-600">
+              Service Categories
             </CardTitle>
-            <Wrench className="h-4 w-4 text-muted-foreground" />
+            <LayoutGrid className="h-4 w-4 text-indigo-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">
-              {completedBookings}
+            <div className="text-2xl font-bold text-indigo-600">
+              {loading ? "..." : stats.totalCategories}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Active marketplace modules
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Bookings List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Booking Requests</CardTitle>
-          <CardDescription>
-            All customer bookings across the platform.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {bookings.map((booking) => {
-                  const bookingId = booking.id || booking._id || "";
-                  return (
-                    <TableRow key={bookingId}>
-                      <TableCell className="font-medium">
-                        {booking.service?.name || "Service"}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          {new Date(booking.bookingDate).toLocaleDateString()}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {booking.slotTime}
-                        </div>
-                      </TableCell>
-                      <TableCell>৳{booking.totalAmount}</TableCell>
-                      <TableCell>
-                        <BookingStatusBadge status={booking.status} />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Direct Action Hub Cards (User & Category Moderation) */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="hover:shadow-md transition-shadow border-slate-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Users className="w-5 h-5 text-primary" /> User Moderation
+            </CardTitle>
+            <CardDescription>
+              View all registered accounts, manage roles, and control access
+              permissions (Ban/Unban users).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard/admin/users">
+              <Button className="gap-2">
+                Manage Users <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow border-slate-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <LayoutGrid className="w-5 h-5 text-indigo-600" /> Category
+              Management
+            </CardTitle>
+            <CardDescription>
+              Create, edit, or clean up service categories to keep marketplace
+              listings organized.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard/admin/categories">
+              <Button variant="outline" className="gap-2">
+                Manage Categories <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

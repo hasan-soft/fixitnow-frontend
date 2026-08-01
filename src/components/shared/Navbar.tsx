@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { axiosInstance } from "@/lib/axios";
 
 export default function Navbar() {
+    const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
 
@@ -62,18 +64,9 @@ export default function Navbar() {
     router.refresh();
   };
 
-  const getDashboardLink = () => {
-    if (!user) return "/dashboard/customer";
-    switch (user.role) {
-      case "ADMIN":
-        return "/dashboard/admin";
-      case "TECHNICIAN":
-        return "/dashboard/technician";
-      default:
-        return "/dashboard/customer";
-    }
-  };
-
+  if (pathname?.startsWith("/dashboard")) {
+    return null;
+  }
   return (
     <nav className="bg-background border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -101,8 +94,8 @@ export default function Navbar() {
             </Link>
             {user && (
               <Link
-                href={getDashboardLink()}
-                className="hover:text-primary font-semibold text-primary transition-colors"
+                href="/dashboard"
+                className="hover:text-primary transition-colors"
               >
                 Dashboard
               </Link>
