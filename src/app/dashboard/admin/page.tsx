@@ -32,7 +32,6 @@ export default function AdminDashboardPage() {
 
     const fetchStats = async () => {
       try {
-        // একাধিক API নিরাপদভাবে ডাকার জন্য Promise.allSettled
         const [usersRes, categoriesRes, bookingsRes] = await Promise.allSettled(
           [
             axiosInstance.get("/admin/users"),
@@ -96,7 +95,7 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Required Metric Cards (Requirement অনুযায়ী) */}
+      {/* Required Metric Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="shadow-sm border-slate-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -150,7 +149,6 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* Direct Action Hub Cards (User & Category Moderation) */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="hover:shadow-md transition-shadow border-slate-200">
           <CardHeader>

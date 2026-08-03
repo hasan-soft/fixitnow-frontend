@@ -34,6 +34,11 @@ const roleMenus = {
       href: "/dashboard/technician",
       icon: Wrench,
     },
+    {
+      title: "Manage Bookings",
+      href: "/dashboard/technician/bookings",
+      icon: Calendar,
+    },
     { title: "My Availability", href: "/dashboard/availability", icon: Clock },
     { title: "Profile", href: "/dashboard/profile", icon: UserIcon },
   ],
@@ -205,7 +210,7 @@ export default function DashboardLayout({
             </h1>
           </div>
 
-          {/* 🟢 DYNAMIC USER HEADER SECTION */}
+          {/* DYNAMIC USER HEADER SECTION */}
           {user && (
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
