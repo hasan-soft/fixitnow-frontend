@@ -69,7 +69,7 @@ export default function TechnicianDashboardPage() {
   const handleStatusUpdate = async (id: string, newStatus: BookingStatus) => {
     setUpdatingId(id);
     try {
-      const res = await axiosInstance.patch(`/bookings/${id}/status`, {
+      const res = await axiosInstance.patch(`/technicians/bookings/${id}`, {
         status: newStatus,
       });
       if (res.data.success) {
@@ -254,7 +254,7 @@ export default function TechnicianDashboardPage() {
                             {new Date(booking.bookingDate).toLocaleDateString()}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {booking.slotTime}
+                            {booking.timeSlot}
                           </div>
                         </TableCell>
                         <TableCell>

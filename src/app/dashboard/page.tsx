@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useSyncExternalStore } from "react";
+import React, { useEffect, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import { User } from "@/types/auth";
-import TechnicianDashboardPage from "@/app/dashboard/technician/page";
+import { Loader2 } from "lucide-react";
 
 const subscribeStorage = (callback: () => void) => {
   window.addEventListener("storage", callback);
@@ -18,6 +19,8 @@ const getServerSnapshot = (): string | null => {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
+
   const rawUser = useSyncExternalStore(
     subscribeStorage,
     getStoredUserSnapshot,
@@ -33,36 +36,24 @@ export default function DashboardPage() {
     }
   }, [rawUser]);
 
-  if (!user) {
-    return (
-      <div className="p-6 text-center text-muted-foreground">
-        Loading dashboard data...
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!user) return;
+
+    const role = user.role?.toUpperCase();
+
+    if (role === "CUSTOMER") {
+      router.replace("/dashboard/customer");
+    } else if (role === "TECHNICIAN") {
+      router.replace("/dashboard/technician");
+    } else if (role === "ADMIN") {
+      router.replace("/dashboard/admin");
+    }
+  }, [user, router]);
 
   return (
-    <div>
-      {user.role === "TECHNICIAN" && <TechnicianDashboardPage />}
-
-      {user.role === "CUSTOMER" && (
-        <div className="p-6 bg-white dark:bg-slate-950 rounded-xl border shadow-sm">
-          <h2 className="text-2xl font-bold">Welcome, {user.name}!</h2>
-          <p className="text-muted-foreground mt-1">
-            Manage your service bookings and view current job status from the
-            sidebar.
-          </p>
-        </div>
-      )}
-
-      {user.role === "ADMIN" && (
-        <div className="p-6 bg-white dark:bg-slate-950 rounded-xl border shadow-sm">
-          <h2 className="text-2xl font-bold">Welcome, Admin ({user.name})!</h2>
-          <p className="text-muted-foreground mt-1">
-            Manage system services, categories, and users from the sidebar menu.
-          </p>
-        </div>
-      )}
+    <div className="flex h-[60vh] w-full items-center justify-center gap-2 text-muted-foreground">
+      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <span>Redirecting to your dashboard...</span>
     </div>
   );
 }

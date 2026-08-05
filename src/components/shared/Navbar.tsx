@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { axiosInstance } from "@/lib/axios";
 
 export default function Navbar() {
-    const pathname = usePathname();
+  const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
 
@@ -24,7 +24,6 @@ export default function Navbar() {
           setUser(JSON.parse(storedUser));
           return;
         } catch {
-  
           localStorage.removeItem("user");
         }
       }
@@ -64,9 +63,21 @@ export default function Navbar() {
     router.refresh();
   };
 
+  const getDashboardPath = () => {
+    if (!user?.role) return "/dashboard";
+    const role = user.role.toLowerCase();
+
+    if (role === "customer") return "/dashboard/customer";
+    if (role === "technician") return "/dashboard/technician";
+    if (role === "admin") return "/dashboard/admin";
+
+    return "/dashboard";
+  };
+
   if (pathname?.startsWith("/dashboard")) {
     return null;
   }
+
   return (
     <nav className="bg-background border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -94,7 +105,7 @@ export default function Navbar() {
             </Link>
             {user && (
               <Link
-                href="/dashboard"
+                href={getDashboardPath()}
                 className="hover:text-primary transition-colors"
               >
                 Dashboard

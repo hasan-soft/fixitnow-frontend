@@ -16,14 +16,16 @@ export interface Booking {
     price: number;
   };
   technicianId?: string;
+  technicianProfileId?: string;
   technician?: {
     name: string;
     phone?: string;
   };
   bookingDate: string;
-  slotTime: string;
+  timeSlot: string; 
   status: BookingStatus;
-  totalAmount: number;
+
+  totalAmount?: number;
   createdAt: string;
 }
 

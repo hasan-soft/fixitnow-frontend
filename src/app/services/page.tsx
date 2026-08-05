@@ -15,7 +15,6 @@ export default function ServicesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  // React Query দিয়ে ব্যাকএন্ড থেকে লাইভ ডাটা ফেচ করা
   const { data, isLoading, isError } = useQuery({
     queryKey: ["services", selectedCategory, searchQuery],
     queryFn: () => serviceApi.getAllServices(selectedCategory, searchQuery),

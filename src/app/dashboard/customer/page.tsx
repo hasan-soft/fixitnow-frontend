@@ -22,12 +22,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 export default function CustomerDashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   const loadData = async () => {
     try {
@@ -81,11 +94,18 @@ export default function CustomerDashboardPage() {
     };
   }, []);
 
-  const handleCancelBooking = async (id: string) => {
-    if (!confirm("Are you sure you want to cancel this booking?")) return;
+  const requestCancelBooking = (id: string) => {
+    setCancelTargetId(id);
+  };
 
+  const confirmCancelBooking = async () => {
+    if (!cancelTargetId) return;
+
+    setCancelling(true);
     try {
-      const res = await axiosInstance.patch(`/bookings/${id}/cancel`);
+      const res = await axiosInstance.patch(
+        `/bookings/${cancelTargetId}/cancel`,
+      );
       if (res.data.success) {
         toast.success("Booking cancelled successfully!");
         loadData();
@@ -98,6 +118,9 @@ export default function CustomerDashboardPage() {
         errorMessage = error.message;
       }
       toast.error(errorMessage);
+    } finally {
+      setCancelling(false);
+      setCancelTargetId(null);
     }
   };
 
@@ -171,10 +194,14 @@ export default function CustomerDashboardPage() {
                             {new Date(booking.bookingDate).toLocaleDateString()}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {booking.slotTime}
+                            {booking.timeSlot}
                           </div>
                         </TableCell>
-                        <TableCell>৳{booking.totalAmount}</TableCell>
+                        <TableCell>
+                          {booking.service?.price
+                            ? `$${booking.service.price.toLocaleString()}`
+                            : "N/A"}
+                        </TableCell>
                         <TableCell>
                           <BookingStatusBadge status={booking.status} />
                         </TableCell>
@@ -203,7 +230,7 @@ export default function CustomerDashboardPage() {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => handleCancelBooking(bookingId)}
+                              onClick={() => requestCancelBooking(bookingId)}
                             >
                               Cancel
                             </Button>
@@ -218,6 +245,40 @@ export default function CustomerDashboardPage() {
           )}
         </CardContent>
       </Card>
+
+   
+      <AlertDialog
+        open={!!cancelTargetId}
+        onOpenChange={(open) => {
+          if (!open) setCancelTargetId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. Your service request will be marked
+              as cancelled and the technician will be notified.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelling}>
+              Keep Booking
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmCancelBooking}
+              disabled={cancelling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelling ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Yes, Cancel Booking"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
