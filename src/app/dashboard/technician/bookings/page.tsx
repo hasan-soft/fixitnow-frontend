@@ -27,18 +27,18 @@ type BookingStatus =
 
 interface Booking {
   id: string;
-  service: {
-    name: string;
+  service?: {
+    name?: string;
   };
-  customer: {
-    name: string;
-    email: string;
+  customer?: {
+    name?: string;
+    email?: string;
     phone?: string;
   };
   timeSlot: string;
   bookingDate: string;
   status: BookingStatus;
-  totalAmount: number;
+  totalAmount?: number;
 }
 
 export default function TechnicianBookingsPage() {
@@ -56,24 +56,30 @@ export default function TechnicianBookingsPage() {
       : `${baseUrl}/api/${cleanEndpoint}`;
   };
 
+  const getAuthToken = () => {
+    const token =
+      Cookies.get("accessToken") ||
+      Cookies.get("token") ||
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("token");
+
+    return token
+      ? token.startsWith("Bearer ")
+        ? token
+        : `Bearer ${token}`
+      : "";
+  };
+
   useEffect(() => {
     let isMounted = true;
 
     const fetchBookings = async () => {
       try {
-        const token =
-          Cookies.get("accessToken") ||
-          Cookies.get("token") ||
-          localStorage.getItem("accessToken") ||
-          localStorage.getItem("token");
+        const token = getAuthToken();
 
         const res = await fetch(getApiUrl("technicians/bookings"), {
           headers: {
-            Authorization: token
-              ? token.startsWith("Bearer ")
-                ? token
-                : `Bearer ${token}`
-              : "",
+            Authorization: token,
           },
           credentials: "include",
         });
@@ -81,8 +87,12 @@ export default function TechnicianBookingsPage() {
         const data = await res.json();
 
         if (isMounted) {
-          if (data.success) {
-            setBookings(data.data || []);
+          if (data.success || res.ok) {
+            const rawData = data.data || data;
+            const finalBookings = Array.isArray(rawData)
+              ? rawData
+              : rawData?.bookings || [];
+            setBookings(finalBookings);
           } else {
             toast.error(data.message || "Failed to fetch bookings.");
           }
@@ -113,21 +123,13 @@ export default function TechnicianBookingsPage() {
     setActionLoadingId(bookingId);
 
     try {
-      const token =
-        Cookies.get("accessToken") ||
-        Cookies.get("token") ||
-        localStorage.getItem("accessToken") ||
-        localStorage.getItem("token");
+      const token = getAuthToken();
 
       const res = await fetch(getApiUrl(`technicians/bookings/${bookingId}`), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: token
-            ? token.startsWith("Bearer ")
-              ? token
-              : `Bearer ${token}`
-            : "",
+          Authorization: token,
         },
         credentials: "include",
         body: JSON.stringify({ status: newStatus }),
@@ -135,8 +137,10 @@ export default function TechnicianBookingsPage() {
 
       const data = await res.json();
 
-      if (res.ok && data.success) {
-        toast.success(`Booking status updated to ${newStatus}`);
+      if (res.ok && (data.success || res.status === 200)) {
+        toast.success(
+          `Booking status updated to ${newStatus.replace("_", " ")}`,
+        );
         setBookings((prev) =>
           prev.map((b) =>
             b.id === bookingId ? { ...b, status: newStatus } : b,
@@ -153,7 +157,6 @@ export default function TechnicianBookingsPage() {
     }
   };
 
-  // UI Status Badges
   const renderStatusBadge = (status: BookingStatus) => {
     switch (status) {
       case "REQUESTED":
@@ -263,23 +266,27 @@ export default function TechnicianBookingsPage() {
                         <User className="h-4 w-4 text-slate-400" />
                         <div>
                           <p className="font-semibold text-slate-900 dark:text-slate-100">
-                            {booking.customer.name}
+                            {booking.customer?.name || "N/A"}
                           </p>
                           <p className="text-xs text-slate-400">
-                            {booking.customer.phone || booking.customer.email}
+                            {booking.customer?.phone ||
+                              booking.customer?.email ||
+                              "No contact info"}
                           </p>
                         </div>
                       </div>
                     </td>
 
                     <td className="p-4 font-medium text-slate-800 dark:text-slate-200">
-                      {booking.service.name}
+                      {booking.service?.name || "Service Item"}
                     </td>
 
                     <td className="p-4 space-y-1">
                       <div className="flex items-center gap-1.5 text-xs text-slate-500">
                         <Calendar className="h-3.5 w-3.5 text-primary" />
-                        {new Date(booking.bookingDate).toLocaleDateString()}
+                        {booking.bookingDate
+                          ? new Date(booking.bookingDate).toLocaleDateString()
+                          : "N/A"}
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-slate-500">
                         <Clock className="h-3.5 w-3.5 text-primary" />
@@ -288,7 +295,7 @@ export default function TechnicianBookingsPage() {
                     </td>
 
                     <td className="p-4 font-semibold text-slate-900 dark:text-slate-100">
-                      TK{booking.totalAmount}
+                      ৳{booking.totalAmount ?? 0}
                     </td>
 
                     <td className="p-4">{renderStatusBadge(booking.status)}</td>
@@ -355,7 +362,9 @@ export default function TechnicianBookingsPage() {
                             "CANCELLED",
                           ].includes(booking.status) && (
                             <span className="text-xs text-slate-400 italic">
-                              No action needed
+                              {booking.status === "ACCEPTED"
+                                ? "Waiting for payment"
+                                : "No action needed"}
                             </span>
                           )}
                         </div>

@@ -194,7 +194,7 @@ export default function ServiceDetailPage() {
               {service.name}
             </h1>
             <p className="text-2xl font-bold text-primary mt-2">
-              ৳{service.price}
+              ${service.price}
             </p>
           </div>
 
